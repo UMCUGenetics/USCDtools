@@ -354,3 +354,19 @@ prepareRegionalBlacklist <- function (compositeBam,
 
     return (output)
 }
+
+#' Get the number of reads in a region.
+#'
+#' @param bamFilename  The BAM file to look for reads.
+#' @param region       A region specification in the form 'chr:start-end'
+#'
+#' @return The number of reads found in that region.
+#'
+#' @useDynLib scPipelineUMCU, .registration = TRUE
+#'
+#' @export
+
+readsInRegion <- function (bamFilename, region)
+{
+    .Call ("count_reads_for_range", bamFilename, region)
+}
