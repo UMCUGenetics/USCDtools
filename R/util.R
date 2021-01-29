@@ -260,6 +260,12 @@ prepareRegionalBlacklist <- function (compositeBam,
                                       allosomes,
                                       threads=32)
 {
+    if (! file.exists (compositeBam))
+    {
+        cat (paste0 ("File '", compositeBam, "' does not exist.\n"))
+        return (FALSE)
+    }
+
     compositeBam_sans_ext <- tools::file_path_sans_ext(compositeBam)
     chromosomeFilter <- c(autosomes, allosomes)
 
