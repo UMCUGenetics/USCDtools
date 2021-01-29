@@ -376,3 +376,19 @@ readsInRegion <- function (bamFilename, region)
 {
     .Call ("count_reads_for_range", bamFilename, region)
 }
+
+#' Get the number of reads for a list of regions.
+#'
+#' @param bamFilename  The BAM file to look for reads.
+#' @param regions      A list of regions in the form 'chr:start-end'.
+#'
+#' @return A list with the number of reads in each region.
+#'
+#' @useDynLib scPipelineUMCU, .registration = TRUE
+#'
+#' @export
+
+readsInRegions <- function (bamFilename, regions)
+{
+    .Call ("count_reads_for_ranges", bamFilename, regions)
+}
