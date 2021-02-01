@@ -84,7 +84,6 @@ count_reads_for_ranges (SEXP input_file_sexp, SEXP regions_sexp)
   const char *input_file        = NULL;
   const char *region            = NULL;
   SEXP       output             = NULL;
-  SEXP       element            = NULL;
   int        *p_output          = NULL;
   int        reads_in_region    = 0;
   int        state              = 0;
@@ -119,8 +118,7 @@ count_reads_for_ranges (SEXP input_file_sexp, SEXP regions_sexp)
 
   for (int i = 0; i < regions_len; i++)
     {
-      element = VECTOR_ELT(regions_sexp, i);
-      region = CHAR(STRING_ELT(element, 0));
+      region = CHAR(STRING_ELT(regions_sexp, i));
 
       iterator = sam_itr_querys (bam_index, bam_header, region);
       if (iterator != 0)
@@ -140,7 +138,6 @@ count_reads_for_ranges (SEXP input_file_sexp, SEXP regions_sexp)
     }
 
   UNPROTECT (1);
-  element = NULL;
 
   sam_itr_destroy (iterator);    iterator = NULL;
   hts_idx_destroy (bam_index);   bam_index = NULL;

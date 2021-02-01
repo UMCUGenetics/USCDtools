@@ -71,18 +71,6 @@ createCompositeBam <- function (filelist, output_path, threads=32)
         })
     }
 
-    ### The merge process already sorts it.
-    ## sortCommand <- paste0 ("samtools sort -T ", dirname (output_path),
-    ##                        " -@ ", threads ," -O bam -o ",
-    ##                        str_replace (output_path, ".bam", ".sorted.bam"),
-    ##                        " ", output_path)
-    ##
-    ## cat(paste0("Sorting ", output_path ,".\n"))
-    ## tryCatch(system (sortCommand), error = function (e) {
-    ##     cat(paste0("Sorting failed.\n"))
-    ##     return (FALSE)
-    ## })
-
     return (TRUE)
 }
 
@@ -92,6 +80,8 @@ createCompositeBam <- function (filelist, output_path, threads=32)
 #' @param chromosomeFilter   A vector containing the chromosome names to keep.
 #'
 #' @return A data frame containing the chromosome name and its length in bp.
+#'
+#' @importFrom GenomeInfoDb  seqlengths
 #'
 #' @export
 
@@ -208,6 +198,7 @@ createPopulation <- function (population_set)
 #' @return A data frame with two columns: the ID and the median copy number
 #'         state of the cell.
 #'
+#' @importFrom stats median
 #' @export
 
 getMedianCopyNumberStates <- function (cells.list)
@@ -229,36 +220,22 @@ getMedianCopyNumberStates <- function (cells.list)
     return (data.frame (ID, cn.state.median, stringsAsFactors=FALSE))
 }
 
-### IDEA: Also include the bins that fall into telomere and centromere regions.
-#' Determine list of unreliable regions
-#'
-#' This function divides the genome in bins and returns a list of the
-#' 2% bins with the least number of reads, and of the 3% bins with the
-#' most number of reads for autosomal chromosomes, and the least 3% and
-#' most 5% for allosomal chromosomes.
+#' Coverage per bin
 #'
 #' @param compositeBam     The BAM file to determine unreliable regions from.
-#' @param genome           A BSgenome object matching the reference genome used
-#'                         in the 'compositeBam'.
-#' @param autosomes        A vector containing the autosomal chromosome names to keep.
-#' @param allosomes        A vector containing the sex chromosome names to keep.
+#' @param genome           A BSgenome object matching the reference genome
+#'                         used in the 'compositeBam'.
+#' @param chromosomeFilter A vector containing the chromosome names to keep.
 #' @param binSize          The size of a single bin.
-#' @param threads          Number of threads to use for this process.
 #'
-#' @return A GRanges object containing the regions to exclude from further
-#'         analysis.
+#' @return A GRanges object containing binned regions and their coverage.
 #'
 #' @importFrom GenomicRanges tileGenome GRanges
-#' @importFrom tools         file_path_sans_ext
+#' @importFrom IRanges IRanges
 #'
 #' @export
 
-prepareRegionalBlacklist <- function (compositeBam,
-                                      genome,
-                                      binSize,
-                                      autosomes,
-                                      allosomes,
-                                      threads=32)
+coveragePerBin <- function (compositeBam, genome, chromosomeFilter, binSize)
 {
     if (! file.exists (compositeBam))
     {
@@ -266,99 +243,122 @@ prepareRegionalBlacklist <- function (compositeBam,
         return (FALSE)
     }
 
-    compositeBam_sans_ext <- tools::file_path_sans_ext(compositeBam)
-    chromosomeFilter <- c(autosomes, allosomes)
-
+    ## Generate a BAM index so that idxstats are generated efficiently.
     index_filename <- paste0 (compositeBam, ".bai")
     if (! file.exists (index_filename))
     {
-        system (paste0 ("samtools index -@ ", threads, " ", compositeBam))
+        createBamIndex (compositeBam);
     }
 
-    idxstats_filename <- paste0 (compositeBam, ".idxstats")
-    idxstats_errors   <- paste0 (compositeBam, ".idxstats.errors")
-    if (! file.exists (idxstats_filename))
-    {
-        system2 ('samtools', args = c('idxstats', compositeBam),
-                 stdout = idxstats_filename,
-                 stderr = idxstats_errors)
-    }
-
+    ## Determine chromosome lengths based on the BSgenome.
     chromosome_lengths <- chromosomeLengths (genome, chromosomeFilter)
-    chromosome_lengths[,1]
-    chromosome_lengths[,2]
-    chromosomes <- GRanges (seqnames = chromosome_lengths[,1],
-                            IRanges (start = 1, end = chromosome_lengths[,2]))
+    chromosomes        <- GRanges (seqnames = chromosome_lengths[,1],
+                                   IRanges (start = 1,
+                                            end = chromosome_lengths[,2]))
 
-    seqlengths (chromosomes) <- chromosome_lengths[,2]
-
-    bins <- tileGenome (seqlengths             = chr_lengths,
+    ## Split the genome in bins.
+    bins <- tileGenome (seqlengths             = chromosome_lengths[,2],
                         tilewidth              = as.numeric (binSize),
                         cut.last.tile.in.chrom = TRUE)
 
-    bins_output <- data.frame(bins, stringsAsFactors = F)[,1:3]
+    df_bins <- data.frame (bins, stringsAsFactors = F)[,1:3]
+    number_of_bins <- length(bins)
+    regions_vector <- character(number_of_bins)
 
-    # The coverage on the X chromosome is expected to be lower in males.
-    # Therefore, we treat it seperately from the autosomes.
-
-    bins_file <- paste0 (compositeBam_sans_ext, "_",
-                         format(binSize, scientific=FALSE), "bp_bins.bed")
-
-    write.table (bins_output,
-                 file      = bins_file,
-                 sep       = "\t",
-                 quote     = FALSE,
-                 col.names = FALSE,
-                 row.names = FALSE)
-
-    intersect_output_file   <- paste0(compositeBam_sans_ext, "_intersect.bed")
-    intersect_output_errors <- paste0(compositeBam_sans_ext, "_intersect.errors")
-
-    exit_code <- system2 ('bedtools',
-                          args = c('intersect',
-                                   '-a', bins_file,
-                                   '-b', compositeBam,
-                                   '-sorted', '-c', '-g', idxstats_filename),
-                          stdout = intersect_output_file,
-                          stderr = intersect_output_errors)
-
-    if (exit_code != 0)
+    for (index in 1:number_of_bins)
     {
-        cat (paste0 ("Failed to run 'bedtools'.\n"))
-        return (FALSE)
+        regions_vector[index] <- paste0(df_bins$seqnames[index], ":",
+                                        df_bins$start[index], "-",
+                                        df_bins$end[index])
     }
 
-    coverage_per_bin_total <- read.delim (intersect_output_file,
-                                          stringsAsFactors = FALSE,
-                                          header           = FALSE)
+    ## Count the number of reads per bin.
+    coverage_per_bin       <- readsInRegions (compositeBam, regions_vector)
+    coverage_per_bin_total <- data.frame (df_bins, coverage_per_bin, stringsAsFactors=FALSE)
 
-    coverage_per_bin_autosomal <- coverage_per_bin_total[coverage_per_bin_total[,1] %in% autosomes]
-    low_cutoff  <- quantile (coverage_per_bin_autosomal[,4], 0.02)
-    high_cutoff <- quantile (coverage_per_bin_autosomal[,4], 0.97)
-
-    autosomal_excluded_bins <- coverage_per_bin_autosomal[coverage_per_bin_autosomal[,4] <= low_cutoff |
-                                                          coverage_per_bin_autosomal[,4] >= high_cutoff,]
+    return (coverage_per_bin_total)
+}
 
 
-    coverage_per_bin_allosomal <- coverage_per_bin_total[coverage_per_bin_total[,1] %in% allosomes]
-    low_cutoff  <- quantile (coverage_per_bin_allosomal[,4], 0.03)
-    high_cutoff <- quantile (coverage_per_bin_allosomal[,4], 0.95)
+#' Determine list of unreliable regions
+#'
+#' This function divides the genome in bins and returns a list of the
+#' 2% bins with the least number of reads, and of the 3% bins with the
+#' most number of reads for autosomal chromosomes, and the least 3% and
+#' most 5% for allosomal chromosomes.
+#'
+#' @param compositeBam  The BAM file to determine unreliable regions from.
+#' @param genome        A BSgenome object matching the reference genome used
+#'                      in the 'compositeBam'.
+#' @param autosomes     A vector containing the autosomal chromosome names.
+#' @param allosomes     A vector containing the sex chromosome names.
+#' @param binSize       The size of a single bin.
+#'
+#' @return A GRanges object containing the regions to exclude from further
+#'         analysis.
+#'
+#' @importFrom GenomicRanges makeGRangesFromDataFrame
+#' @importFrom stats quantile
+#'
+#' @export
 
-    allosomal_excluded_bins <- coverage_per_bin_allosomal[coverage_per_bin_allosomal[,4] <= low_cutoff |
-                                                          coverage_per_bin_allosomal[,4] >= high_cutoff,]
+prepareRegionalBlacklist <- function (compositeBam,
+                                      genome,
+                                      binSize,
+                                      autosomes,
+                                      allosomes)
+{
+    chromosomeFilter <- c(autosomes, allosomes)
+    coverage <- coveragePerBin (compositeBam, genome, binSize, chromosomeFilter)
+
+    ## Determine the outlier bins.
+    coverage_autosomal <- coverage[coverage[,1] %in% autosomes,]
+    low_cutoff  <- quantile (coverage_autosomal[,4], 0.02)
+    high_cutoff <- quantile (coverage_autosomal[,4], 0.97)
+
+    autosomal_excluded_bins <- coverage_autosomal[coverage_autosomal[,4] <= low_cutoff |
+                                                  coverage_autosomal[,4] >= high_cutoff,]
+
+    coverage_allosomal <- coverage[coverage[,1] %in% allosomes,]
+    low_cutoff  <- quantile (coverage_allosomal[,4], 0.03)
+    high_cutoff <- quantile (coverage_allosomal[,4], 0.95)
+
+    allosomal_excluded_bins <- coverage_allosomal[coverage_allosomal[,4] <= low_cutoff |
+                                                  coverage_allosomal[,4] >= high_cutoff,]
 
     combined_excluded_bins <- rbind (autosomal_excluded_bins, allosomal_excluded_bins)
 
-    # Merge bins together when they are less one bin apart.
-    combined <- GRanges (seqnames = combined_excluded_bins[,1],
-                         IRanges(start = combined_excluded_bins[,2] - (binSize / 2),
-                                 end   = combined_excluded_bins[,3] - (binSize / 2)))
-    output   <- reduce (combined)
+    names (combined_excluded_bins) <- c("seqnames", "start", "end", "number.of.reads")
+    output <- makeGRangesFromDataFrame (combined_excluded_bins, keep.extra.columns=TRUE)
 
-    start (output) <- start (output) + (binSize / 2)
-    end   (output) <- end   (output) + (binSize / 2)
+    ## TODO: Figure out whether min.gapwidth is equivalent to the commented
+    ## out piece below.
+    ## TODO: The call to reduce removes the 'number.of.reads' metadata column.
+    output <- reduce (output, min.gapwidth = (binSize / 2))
 
     return (output)
+
+    ## ## To merge bins together, look half a binSize to the left.
+    ## shifted_start <- combined_excluded_bins[,2] - (binSize / 2)
+
+    ## ## For the first bin, we would end up with a negative start position.
+    ## ## Reset it to 1.
+    ## shifted_start[which (shifted_start < 0)] <- 1
+
+    ## shifted_end <- combined_excluded_bins[,3] - (binSize / 2)
+
+    ## # Merge bins together when they are less one bin apart.
+    ## combined <- GRanges (seqnames = combined_excluded_bins[,1],
+    ##                      IRanges(start = shifted_start,
+    ##                              end   = shifted_end))
+    ## output   <- reduce (combined)
+
+    ## start_output <- start (output) + (binSize / 2)
+    ## start (output) <- start_output
+    ## start (output) <- start (output) + (binSize / 2)
+    ## end   (output) <- end   (output) + (binSize / 2)
+
+    ## return (output)
 }
 
 #' Get the number of reads in a region.
@@ -380,7 +380,7 @@ readsInRegion <- function (bamFilename, region)
 #' Get the number of reads for a list of regions.
 #'
 #' @param bamFilename  The BAM file to look for reads.
-#' @param regions      A list of regions in the form 'chr:start-end'.
+#' @param regions      A vector of regions in the form 'chr:start-end'.
 #'
 #' @return A list with the number of reads in each region.
 #'
