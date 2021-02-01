@@ -150,6 +150,15 @@ count_reads_for_ranges (SEXP input_file_sexp, SEXP regions_sexp)
   return output;
 }
 
+SEXP
+create_bam_index (SEXP input_file_sexp)
+{
+  const char *input_file = CHAR(STRING_ELT(input_file_sexp, 0));
+
+  int status = sam_index_build (input_file, 0);
+  return Rf_ScalarLogical ((status < 0) ? FALSE : TRUE);
+}
+
 /* -------------------------------------------------------------------------
  * Register the functions to R.
  * ------------------------------------------------------------------------- */
@@ -157,6 +166,7 @@ count_reads_for_ranges (SEXP input_file_sexp, SEXP regions_sexp)
 R_CallMethodDef callMethods[]  = {
   { "count_reads_for_range",  (DL_FUNC)&count_reads_for_range,  2 },
   { "count_reads_for_ranges", (DL_FUNC)&count_reads_for_ranges, 2 },
+  { "create_bam_index",       (DL_FUNC)&create_bam_index,       1 },
   { NULL,                     NULL,                             0 }
 };
 

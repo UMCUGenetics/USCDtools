@@ -392,3 +392,18 @@ readsInRegions <- function (bamFilename, regions)
 {
     .Call ("count_reads_for_ranges", bamFilename, regions)
 }
+
+#' Create a BAM index
+#'
+#' @param bamFilename  The BAM file to create an index for.
+#'
+#' @return TRUE on sucess, FALSE on failure.
+#'
+#' @useDynLib scPipelineUMCU, .registration = TRUE
+#'
+#' @export
+
+createBamIndex <- function (bamFilename)
+{
+    .Call ("create_bam_index", bamFilename)
+}
