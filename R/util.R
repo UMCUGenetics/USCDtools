@@ -303,11 +303,11 @@ coveragePerBin <- function (compositeBam, genome, chromosomeFilter, binSize)
 #'
 #' @export
 
-prepareRegionalBlacklist <- function (compositeBam,
-                                      genome,
-                                      binSize,
-                                      autosomes,
-                                      allosomes)
+determineOutlierRegions <- function (compositeBam,
+                                     genome,
+                                     binSize,
+                                     autosomes,
+                                     allosomes)
 {
     chromosomeFilter <- c(autosomes, allosomes)
     coverage <- coveragePerBin (compositeBam, genome, binSize, chromosomeFilter)
