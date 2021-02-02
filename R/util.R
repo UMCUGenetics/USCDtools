@@ -257,7 +257,8 @@ coveragePerBin <- function (compositeBam, genome, chromosomeFilter, binSize)
                                             end = chromosome_lengths[,2]))
 
     ## Split the genome in bins.
-    bins <- tileGenome (seqlengths             = chromosome_lengths[,2],
+    bins <- tileGenome (seqlengths             = setNames(chromosome_lengths$chr_size,
+                                                          chromosome_lengths$seqnames),
                         tilewidth              = as.numeric (binSize),
                         cut.last.tile.in.chrom = TRUE)
 
