@@ -362,6 +362,36 @@ prepareRegionalBlacklist <- function (compositeBam,
     ## return (output)
 }
 
+#' Calculate a correction factor for the sequencing depth of each bin.
+#'
+#' @param cells.list  A list of data frames returned by 'coveragePerBin'.
+#'
+#' @return A list with the correction factor per bin.
+#'
+#' @export
+
+determineCorrectionFactorPerBin <- function (cells.list)
+{
+    numberOfCells <- length(cells.list)
+    numberOfBins  <- nrow(cells.list[[1]])
+
+    medianPerBin  <- numeric(numberOfBins)
+    for (binIndex in 1:numberOfBins)
+    {
+        binCounts <- numeric(numberOfCells)
+        for (cellIndex in 1:numberOfCells)
+        {
+            binCounts[cellIndex] <- cells.list[[cellIndex]]$coverage_per_bin[binIndex]
+        }
+        medianPerBin[binIndex] <- median(binCounts)
+    }
+
+    averageBinCount <- mean(medianPerBin)
+    output <- averageBinCount / medianPerBin
+
+    return (output)
+}
+
 #' Get the number of reads in a region.
 #'
 #' @param bamFilename  The BAM file to look for reads.
