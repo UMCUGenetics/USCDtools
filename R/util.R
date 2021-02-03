@@ -392,6 +392,36 @@ determineCorrectionFactorPerBin <- function (cells.list)
     return (output)
 }
 
+#' Plot the correction factors calculated by ‘determineCorrectionFactorPerBin’.
+#'
+#' @param cells.list         The same parameter passed to
+#'                           ‘determineCorrectionFactorPerBin’.
+#' @param correction.factors The output of ‘determineCorrectionFactorPerBin’.
+#'
+#' @importFrom ggplot2 ggplot ylim geom_point geom_line theme
+#'
+#' @return A ggplot2 object.
+#'
+#' @export
+
+plotCorrectionFactorPerBin <- function (cells.list, correction.factors)
+{
+    df <- data.frame(bin = paste0(cells.list[[1]]$seqname, ":",
+                                  cells.list[[1]]$start, "-",
+                                  cells.list[[1]]$end),
+                     correction.factor = correction.factors)
+
+    plot <- ggplot (genome_df, aes(x=bin, y=correction.factor, group=1)) +
+        xlab("Bins") +
+        ylab("Correction factor") +
+        ylim(0, 2) +
+        geom_point() +
+        geom_line() +
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+    return (plot)
+}
+
 #' Get the number of reads in a region.
 #'
 #' @param bamFilename  The BAM file to look for reads.
