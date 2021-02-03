@@ -468,3 +468,17 @@ createBamIndex <- function (bamFilename)
 {
     .Call ("create_bam_index", bamFilename)
 }
+
+#' Create a symbolic link.
+#'
+#' @param target       The existing target path.
+#' @param destination  The non-existing destination path.
+#'
+#' @return TRUE on success, FALSE on failure.
+#'
+#' @export
+
+createSymlink <- function (target, destination)
+{
+    .Call ("create_symbolic_link", target, destination)
+}
