@@ -411,7 +411,7 @@ plotCorrectionFactorPerBin <- function (cells.list, correction.factors)
                                   cells.list[[1]]$end),
                      correction.factor = correction.factors)
 
-    plot <- ggplot (genome_df, aes(x=bin, y=correction.factor, group=1)) +
+    plot <- ggplot (df, aes(x=bin, y=correction.factor, group=1)) +
         xlab("Bins") +
         ylab("Correction factor") +
         ylim(0, 2) +
