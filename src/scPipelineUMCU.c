@@ -117,7 +117,8 @@ count_reads_for_ranges (SEXP input_file_sexp, SEXP regions_sexp)
   PROTECT (output = NEW_INTEGER(regions_len));
   p_output = INTEGER_POINTER(output);
 
-  for (int i = 0; i < regions_len; i++)
+  int i;
+  for (i = 0; i < regions_len; i++)
     {
       region = CHAR(STRING_ELT(regions_sexp, i));
 
