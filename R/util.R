@@ -314,7 +314,7 @@ determineOutlierRegions <- function (compositeBam,
 {
     chromosomeFilter <- c(autosomes, allosomes)
 
-    if (! is.null(coverage) && is.null(compositeBam))
+    if (is.null(coverage))
         coverage <- coveragePerBin (compositeBam, genome, binSize, chromosomeFilter)
 
     ## Determine the outlier bins.
