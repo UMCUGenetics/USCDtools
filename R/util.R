@@ -274,10 +274,10 @@ coveragePerBin <- function (compositeBam, genome, chromosomeFilter, binSize)
     }
 
     ## Count the number of reads per bin.
-    coverage_per_bin       <- readsInRegions (compositeBam, regions_vector)
-    coverage_per_bin_total <- data.frame (df_bins, coverage_per_bin, stringsAsFactors=FALSE)
+    read.count       <- readsInRegions (compositeBam, regions_vector)
+    read.count.total <- data.frame (df_bins, read.count, stringsAsFactors=FALSE)
 
-    return (coverage_per_bin_total)
+    return (read.count.total)
 }
 
 
@@ -294,6 +294,8 @@ coveragePerBin <- function (compositeBam, genome, chromosomeFilter, binSize)
 #' @param autosomes     A vector containing the autosomal chromosome names.
 #' @param allosomes     A vector containing the sex chromosome names.
 #' @param binSize       The size of a single bin.
+#' @param coverage      A data frame like the output of ‘coveragePerBin’ or
+#'                      ‘mergeBinCounts’.
 #'
 #' @return A GRanges object containing the regions to exclude from further
 #'         analysis.
@@ -307,10 +309,13 @@ determineOutlierRegions <- function (compositeBam,
                                      genome,
                                      binSize,
                                      autosomes,
-                                     allosomes)
+                                     allosomes,
+                                     coverage = NULL)
 {
     chromosomeFilter <- c(autosomes, allosomes)
-    coverage <- coveragePerBin (compositeBam, genome, binSize, chromosomeFilter)
+
+    if (! is.null(coverage) && is.null(compositeBam))
+        coverage <- coveragePerBin (compositeBam, genome, binSize, chromosomeFilter)
 
     ## Determine the outlier bins.
     coverage_autosomal <- coverage[coverage[,1] %in% autosomes,]
@@ -384,7 +389,7 @@ mergeBinCounts <- function (cells.list)
         binCounts <- numeric(numberOfCells)
         for (cellIndex in 1:numberOfCells)
         {
-            binCounts[cellIndex] <- cells.list[[cellIndex]]$coverage_per_bin[binIndex]
+            binCounts[cellIndex] <- cells.list[[cellIndex]]$read.count[binIndex]
         }
         totalPerBin[binIndex] <- sum(binCounts)
     }
@@ -417,7 +422,7 @@ determineCorrectionFactorPerBin <- function (cells.list)
         binCounts <- numeric(numberOfCells)
         for (cellIndex in 1:numberOfCells)
         {
-            binCounts[cellIndex] <- cells.list[[cellIndex]]$coverage_per_bin[binIndex]
+            binCounts[cellIndex] <- cells.list[[cellIndex]]$read.count[binIndex]
         }
         medianPerBin[binIndex] <- median(binCounts)
     }
