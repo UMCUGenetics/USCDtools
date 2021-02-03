@@ -362,6 +362,42 @@ determineOutlierRegions <- function (compositeBam,
     ## return (output)
 }
 
+
+#' Merge the results of multiple outputs of ‘coveragePerBin’, summing
+#' the total number of reads per bin.
+#'
+#' @param cells.list  A list of data frames returned by 'coveragePerBin'.
+#'
+#' @return A data frame containing the seqname, start, end, and the sum of
+#'         reads in a bin.
+#'
+#' @export
+
+mergeBinCounts <- function (cells.list)
+{
+    numberOfCells <- length(cells.list)
+    numberOfBins  <- nrow(cells.list[[1]])
+
+    totalPerBin   <- numeric(numberOfBins)
+    for (binIndex in 1:numberOfBins)
+    {
+        binCounts <- numeric(numberOfCells)
+        for (cellIndex in 1:numberOfCells)
+        {
+            binCounts[cellIndex] <- cells.list[[cellIndex]]$coverage_per_bin[binIndex]
+        }
+        totalPerBin[binIndex] <- sum(binCounts)
+    }
+
+    output <- data.frame(seqname    = cells.list[[1]]$seqname,
+                         start      = cells.list[[1]]$start,
+                         end        = cells.list[[1]]$end,
+                         read.count = totalPerBin)
+
+    return (output)
+}
+
+
 #' Calculate a correction factor for the sequencing depth of each bin.
 #'
 #' @param cells.list  A list of data frames returned by 'coveragePerBin'.
