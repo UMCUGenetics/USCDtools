@@ -458,7 +458,10 @@ plotCorrectionFactorPerBin <- function (cells.list, correction.factors)
         ylim(0, 2) +
         geom_point() +
         geom_line() +
-        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+        theme(axis.text.x = element_text(size  = rel(0.5),
+                                         angle = 90,
+                                         vjust = 0.5,
+                                         hjust = 1))
 
     return (plot)
 }
