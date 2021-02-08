@@ -227,6 +227,9 @@ getMedianCopyNumberStates <- function (cells.list)
 #'                         used in the 'compositeBam'.
 #' @param chromosomeFilter A vector containing the chromosome names to keep.
 #' @param binSize          The size of a single bin.
+#' @param minimumMappingQuality  The minimum mapping quality to include.
+#'                               This should be a value between 0 and 60,
+#'                               and defaults to 0 (include all reads).
 #'
 #' @return A GRanges object containing binned regions and their coverage.
 #'
@@ -235,7 +238,7 @@ getMedianCopyNumberStates <- function (cells.list)
 #'
 #' @export
 
-coveragePerBin <- function (compositeBam, genome, chromosomeFilter, binSize)
+coveragePerBin <- function (compositeBam, genome, chromosomeFilter, binSize, minimumMappingQuality = 0)
 {
     if (! file.exists (compositeBam))
     {
@@ -274,7 +277,7 @@ coveragePerBin <- function (compositeBam, genome, chromosomeFilter, binSize)
     }
 
     ## Count the number of reads per bin.
-    read.count       <- readsInRegions (compositeBam, regions_vector)
+    read.count       <- readsInRegions (compositeBam, regions_vector, minimumMappingQuality)
     read.count.total <- data.frame (df_bins, read.count, stringsAsFactors=FALSE)
 
     return (read.count.total)
