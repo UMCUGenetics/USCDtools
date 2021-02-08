@@ -490,7 +490,7 @@ plotCorrectionFactorPerBin <- function (cells.list, correction.factors)
 
 readsInRegion <- function (bamFilename, region, minimumMappingQuality = 0)
 {
-    .Call ("count_reads_for_range", bamFilename, region, minimumMappingQuality)
+    .Call ("count_reads_for_range", bamFilename, region, as.integer(minimumMappingQuality))
 }
 
 #' Get the number of reads for a list of regions.
@@ -510,7 +510,7 @@ readsInRegion <- function (bamFilename, region, minimumMappingQuality = 0)
 
 readsInRegions <- function (bamFilename, regions, minimumMappingQuality = 0)
 {
-    .Call ("count_reads_for_ranges", bamFilename, regions, minimumMappingQuality)
+    .Call ("count_reads_for_ranges", bamFilename, regions, as.integer(minimumMappingQuality))
 }
 
 #' Create a BAM index

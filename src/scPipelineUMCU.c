@@ -61,7 +61,7 @@ count_reads_for_range (SEXP input_file_sexp,
         {
           /* aligment->core.qual is a uint8_t between 0 and 60.
            * So casting minimum_quality is fine for real-world values. */
-          if (alignment->core.qual == *minimum_quality)
+          if (alignment->core.qual >= *minimum_quality)
             reads_in_region++;
         }
 
@@ -140,7 +140,7 @@ count_reads_for_ranges (SEXP input_file_sexp,
                                         iterator,
                                         alignment)) >= 0)
             {
-              if (alignment->core.qual == *minimum_quality)
+              if (alignment->core.qual >= *minimum_quality)
                 reads_in_region++;
             }
 
