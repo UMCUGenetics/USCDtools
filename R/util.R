@@ -441,7 +441,7 @@ determineCorrectionFactorPerBin <- function (cells.list)
 #'
 #' @importFrom ggplot2 ggplot ylim geom_point geom_line theme
 #'
-#' @return A ggplot2 object.
+#' @return A list of ggplot2 objects (one per chromosome).
 #'
 #' @export
 
@@ -452,18 +452,25 @@ plotCorrectionFactorPerBin <- function (cells.list, correction.factors)
                                   cells.list[[1]]$end),
                      correction.factor = correction.factors)
 
-    plot <- ggplot (df, aes(x=bin, y=correction.factor, group=1)) +
-        xlab("Bins") +
-        ylab("Correction factor") +
-        ylim(0, 2) +
-        geom_point() +
-        geom_line() +
-        theme(axis.text.x = element_text(size  = rel(0.5),
-                                         angle = 90,
-                                         vjust = 0.5,
-                                         hjust = 1))
+    chromosomeNames <- unique(cells.list[[1]]$seqname)
 
-    return (plot)
+    plots <- lapply (chromosomeNames, function (chromosome)
+    {
+        chr_df <- df[grep (paste0("^", chromosome, ":"), df$bin, perl = TRUE),]
+        plot <- ggplot (df, aes(x=bin, y=correction.factor, group=1)) +
+            xlab("Bins") +
+            ylab("Correction factor") +
+            ylim(0, 2) +
+            geom_point() +
+            geom_line() +
+            theme(axis.text.x = element_text(size  = rel(0.5),
+                                             angle = 90,
+                                             vjust = 0.5,
+                                             hjust = 1))
+        return (plot)
+    })
+
+    return (plots)
 }
 
 #' Get the number of reads in a region.
