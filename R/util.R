@@ -468,8 +468,12 @@ plotCorrectionFactorPerBin <- function (cells.list, correction.factors)
 
 #' Get the number of reads in a region.
 #'
-#' @param bamFilename  The BAM file to look for reads.
-#' @param region       A region specification in the form 'chr:start-end'
+#' @param bamFilename            The BAM file to look for reads.
+#' @param region                 A region specification in the form
+#'                               'chr:start-end'.
+#' @param minimumMappingQuality  The minimum mapping quality to include.
+#'                               This should be a value between 0 and 60,
+#'                               and defaults to 0 (include all reads).
 #'
 #' @return The number of reads found in that region.
 #'
@@ -477,15 +481,19 @@ plotCorrectionFactorPerBin <- function (cells.list, correction.factors)
 #'
 #' @export
 
-readsInRegion <- function (bamFilename, region)
+readsInRegion <- function (bamFilename, region, minimumMappingQuality = 0)
 {
-    .Call ("count_reads_for_range", bamFilename, region)
+    .Call ("count_reads_for_range", bamFilename, region, minimumMappingQuality)
 }
 
 #' Get the number of reads for a list of regions.
 #'
-#' @param bamFilename  The BAM file to look for reads.
-#' @param regions      A vector of regions in the form 'chr:start-end'.
+#' @param bamFilename            The BAM file to look for reads.
+#' @param regions                A vector of regions in the form
+#'                               'chr:start-end'.
+#' @param minimumMappingQuality  The minimum mapping quality to include.
+#'                               This should be a value between 0 and 60,
+#'                               and defaults to 0 (include all reads).
 #'
 #' @return A list with the number of reads in each region.
 #'
@@ -493,9 +501,9 @@ readsInRegion <- function (bamFilename, region)
 #'
 #' @export
 
-readsInRegions <- function (bamFilename, regions)
+readsInRegions <- function (bamFilename, regions, minimumMappingQuality = 0)
 {
-    .Call ("count_reads_for_ranges", bamFilename, regions)
+    .Call ("count_reads_for_ranges", bamFilename, regions, minimumMappingQuality)
 }
 
 #' Create a BAM index

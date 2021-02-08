@@ -10,7 +10,9 @@
  * ------------------------------------------------------------------------- */
 
 SEXP
-count_reads_for_range (SEXP input_file_sexp, SEXP region_sexp)
+count_reads_for_range (SEXP input_file_sexp,
+                       SEXP region_sexp,
+                       SEXP minimum_quality_sexp)
 {
   bam_hdr_t  *bam_header        = NULL;
   htsFile    *bam_input_stream  = NULL;
@@ -22,9 +24,11 @@ count_reads_for_range (SEXP input_file_sexp, SEXP region_sexp)
   int        *p_output          = NULL;
   int        reads_in_region    = 0;
   int        state              = 0;
+  const int  *minimum_quality   = 0;
 
   region     = CHAR(STRING_ELT(region_sexp, 0));
   input_file = CHAR(STRING_ELT(input_file_sexp, 0));
+  minimum_quality = INTEGER_RO(minimum_quality_sexp);
 
   bam_input_stream = hts_open (input_file, "r");
   if (! bam_input_stream)
@@ -55,8 +59,11 @@ count_reads_for_range (SEXP input_file_sexp, SEXP region_sexp)
                                     iterator,
                                     alignment)) >= 0)
         {
-	  reads_in_region++;
-    	}
+          /* aligment->core.qual is a uint8_t between 0 and 60.
+           * So casting minimum_quality is fine for real-world values. */
+          if (alignment->core.qual == *minimum_quality)
+            reads_in_region++;
+        }
 
       bam_destroy1 (alignment); alignment = NULL;
     }
@@ -76,7 +83,9 @@ count_reads_for_range (SEXP input_file_sexp, SEXP region_sexp)
 
 
 SEXP
-count_reads_for_ranges (SEXP input_file_sexp, SEXP regions_sexp)
+count_reads_for_ranges (SEXP input_file_sexp,
+                        SEXP regions_sexp,
+                        SEXP minimum_quality_sexp)
 {
   bam_hdr_t  *bam_header        = NULL;
   htsFile    *bam_input_stream  = NULL;
@@ -88,9 +97,11 @@ count_reads_for_ranges (SEXP input_file_sexp, SEXP regions_sexp)
   int        *p_output          = NULL;
   int        reads_in_region    = 0;
   int        state              = 0;
+  const int  *minimum_quality   = 0;
   R_len_t    regions_len        = 0;
 
   input_file = CHAR(STRING_ELT(input_file_sexp, 0));
+  minimum_quality = INTEGER_RO(minimum_quality_sexp);
 
   bam_input_stream = hts_open (input_file, "r");
   if (! bam_input_stream)
@@ -121,22 +132,22 @@ count_reads_for_ranges (SEXP input_file_sexp, SEXP regions_sexp)
   for (i = 0; i < regions_len; i++)
     {
       region = CHAR(STRING_ELT(regions_sexp, i));
-
       iterator = sam_itr_querys (bam_index, bam_header, region);
       if (iterator != 0)
-	{
-	  bam1_t *alignment = bam_init1 ();
-	  while ((state = sam_itr_next (bam_input_stream,
-					iterator,
-					alignment)) >= 0)
-	    {
-	      reads_in_region++;
-	    }
+        {
+          bam1_t *alignment       = bam_init1 ();
+          while ((state = sam_itr_next (bam_input_stream,
+                                        iterator,
+                                        alignment)) >= 0)
+            {
+              if (alignment->core.qual == *minimum_quality)
+                reads_in_region++;
+            }
 
-	  bam_destroy1 (alignment); alignment = NULL;
-	  p_output[i] = reads_in_region;
-	  reads_in_region = 0;
-	}
+          bam_destroy1 (alignment); alignment = NULL;
+          p_output[i] = reads_in_region;
+          reads_in_region = 0;
+        }
     }
 
   UNPROTECT (1);
@@ -172,8 +183,8 @@ create_symbolic_link (SEXP target_sexp, SEXP destination_sexp)
  * ------------------------------------------------------------------------- */
 
 R_CallMethodDef callMethods[]  = {
-  { "count_reads_for_range",  (DL_FUNC)&count_reads_for_range,  2 },
-  { "count_reads_for_ranges", (DL_FUNC)&count_reads_for_ranges, 2 },
+  { "count_reads_for_range",  (DL_FUNC)&count_reads_for_range,  3 },
+  { "count_reads_for_ranges", (DL_FUNC)&count_reads_for_ranges, 3 },
   { "create_bam_index",       (DL_FUNC)&create_bam_index,       1 },
   { "create_symbolic_link",   (DL_FUNC)&create_symbolic_link,   2 },
   { NULL,                     NULL,                             0 }
