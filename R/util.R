@@ -460,7 +460,7 @@ plotCorrectionFactorPerBin <- function (cells.list, correction.factors)
     plots <- lapply (chromosomeNames, function (chromosome)
     {
         chr_df <- df[grep (paste0("^", chromosome, ":"), df$bin, perl = TRUE),]
-        plot <- ggplot (df, aes(x=bin, y=correction.factor, group=1)) +
+        plot <- ggplot (chr_df, aes(x=bin, y=correction.factor, group=1)) +
             xlab("Bins") +
             ylab("Correction factor") +
             ylim(0, 2) +
