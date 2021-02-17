@@ -117,6 +117,8 @@ chromosomeLengths <- function (genome, chromosomeFilter)
 #' @return A GRanges object with the overlapping regions between 'x' and 'y'.
 #'
 #' @importFrom GenomicRanges granges findOverlaps pintersect
+#' @importFrom IRanges width
+#' @importFrom S4Vectors queryHits subjectHits
 #'
 #' @export
 
@@ -235,6 +237,7 @@ getMedianCopyNumberStates <- function (cells.list)
 #'
 #' @importFrom GenomicRanges tileGenome GRanges
 #' @importFrom IRanges IRanges
+#' @importFrom stats setNames
 #'
 #' @export
 
@@ -303,7 +306,7 @@ coveragePerBin <- function (compositeBam, genome, chromosomeFilter, binSize, min
 #' @return A GRanges object containing the regions to exclude from further
 #'         analysis.
 #'
-#' @importFrom GenomicRanges makeGRangesFromDataFrame
+#' @importFrom GenomicRanges makeGRangesFromDataFrame reduce
 #' @importFrom stats quantile
 #'
 #' @export
@@ -442,7 +445,7 @@ determineCorrectionFactorPerBin <- function (cells.list)
 #'                           ‘determineCorrectionFactorPerBin’.
 #' @param correction.factors The output of ‘determineCorrectionFactorPerBin’.
 #'
-#' @importFrom ggplot2 ggplot ylim geom_point geom_line theme
+#' @importFrom ggplot2 ggplot ylim geom_point geom_line theme aes xlab ylab element_text rel
 #'
 #' @return A list of ggplot2 objects (one per chromosome).
 #'
@@ -450,6 +453,10 @@ determineCorrectionFactorPerBin <- function (cells.list)
 
 plotCorrectionFactorPerBin <- function (cells.list, correction.factors)
 {
+    # Please the static-analysis tool.
+    correction.factor <- NULL
+    bin <- NULL
+
     df <- data.frame(bin = paste0(cells.list[[1]]$seqname, ":",
                                   cells.list[[1]]$start, "-",
                                   cells.list[[1]]$end),
@@ -487,7 +494,7 @@ plotCorrectionFactorPerBin <- function (cells.list, correction.factors)
 #'
 #' @return The number of reads found in that region.
 #'
-#' @useDynLib scPipelineUMCU, .registration = TRUE
+#' @useDynLib scCnvCharacterizationHelper, .registration = TRUE
 #'
 #' @export
 
@@ -507,7 +514,7 @@ readsInRegion <- function (bamFilename, region, minimumMappingQuality = 0)
 #'
 #' @return A list with the number of reads in each region.
 #'
-#' @useDynLib scPipelineUMCU, .registration = TRUE
+#' @useDynLib scCnvCharacterizationHelper, .registration = TRUE
 #'
 #' @export
 
@@ -522,7 +529,7 @@ readsInRegions <- function (bamFilename, regions, minimumMappingQuality = 0)
 #'
 #' @return TRUE on sucess, FALSE on failure.
 #'
-#' @useDynLib scPipelineUMCU, .registration = TRUE
+#' @useDynLib scCnvCharacterizationHelper, .registration = TRUE
 #'
 #' @export
 

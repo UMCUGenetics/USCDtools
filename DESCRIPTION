@@ -1,4 +1,4 @@
-Package: scPipelineUMCU
+Package: scCnvCharacterizationHelper
 Title: Single-cell copy-number quantification pipeline
 Version: 0.0.0.9000
 Authors@R:
@@ -17,8 +17,8 @@ Imports:
 	IRanges (>= 2.22.2),
 	RCurl (>= 1.95),
 	jsonlite (>= 1.7.1),
-	stringr (>= 1.4.0),
-	ggplot2 (>= 3.3.2)
+	ggplot2 (>= 3.3.2),
+  S4Vectors
 Encoding: UTF-8
 LazyLoad: yes
 LinkingTo: Rhtslib (>= 1.17.7)
