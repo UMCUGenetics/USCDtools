@@ -302,6 +302,10 @@ coveragePerBin <- function (compositeBam, genome, chromosomeFilter, binSize, min
 #' @param binSize       The size of a single bin.
 #' @param coverage      A data frame like the output of ‘coveragePerBin’ or
 #'                      ‘mergeBinCounts’.
+#' @param autosomalCutoffLow (default=0.02)
+#' @param autosomalCutoffHigh (default=0.97)
+#' @param allosomalCutoffLow (default=0.03)
+#' @param allosomalCutoffHigh (default=0.95)
 #'
 #' @return A GRanges object containing the regions to exclude from further
 #'         analysis.
@@ -316,7 +320,11 @@ determineOutlierRegions <- function (compositeBam,
                                      binSize,
                                      autosomes,
                                      allosomes,
-                                     coverage = NULL)
+                                     coverage = NULL,
+                                     autosomalCutoffLow=0.02,
+                                     autosomalCutoffHigh=0.97,
+                                     allosomalCutoffLow=0.03,
+                                     allosomalCutoffHigh=0.95)
 {
     chromosomeFilter <- c(autosomes, allosomes)
 
