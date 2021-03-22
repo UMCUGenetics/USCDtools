@@ -333,15 +333,15 @@ determineOutlierRegions <- function (compositeBam,
 
     ## Determine the outlier bins.
     coverage_autosomal <- coverage[coverage[,1] %in% autosomes,]
-    low_cutoff  <- quantile (coverage_autosomal[,4], 0.02)
-    high_cutoff <- quantile (coverage_autosomal[,4], 0.97)
+    low_cutoff  <- quantile (coverage_autosomal[,4], autosomalCutoffLow)
+    high_cutoff <- quantile (coverage_autosomal[,4], autosomalCutoffHigh)
 
     autosomal_excluded_bins <- coverage_autosomal[coverage_autosomal[,4] <= low_cutoff |
                                                   coverage_autosomal[,4] >= high_cutoff,]
 
     coverage_allosomal <- coverage[coverage[,1] %in% allosomes,]
-    low_cutoff  <- quantile (coverage_allosomal[,4], 0.03)
-    high_cutoff <- quantile (coverage_allosomal[,4], 0.95)
+    low_cutoff  <- quantile (coverage_allosomal[,4], allosomalCutoffLow)
+    high_cutoff <- quantile (coverage_allosomal[,4], allosomalCutoffHigh)
 
     allosomal_excluded_bins <- coverage_allosomal[coverage_allosomal[,4] <= low_cutoff |
                                                   coverage_allosomal[,4] >= high_cutoff,]
