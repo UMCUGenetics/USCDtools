@@ -424,13 +424,18 @@ plotCorrectionFactorPerBin <- function (cells.list, correction.factors)
 
 #' Create a summary table with events per cell.
 #'
-#' @param samplesheet  The samplesheet used to run the pipeline.
+#' @param base_directory  The directory in which AneuFinder output was written.
+#' @param samplesheet     The samplesheet used to run the pipeline.
+#'
+#' @importFrom GenomeInfoDb seqinfo
+#' @importFrom IRanges subsetByOverlaps
+#' @importFrom S4Vectors elementMetadata
 #'
 #' @return A data frame containing the summary counts on success,
 #'         or NULL otherwise.
 #' @export
 
-summaryCountsTable <- function (samplesheet)
+summaryCountsTable <- function (base_directory, samplesheet)
 {
     samples                <- samplesheet[["sample_name"]]
     number_of_samples      <- length(samples)
@@ -447,7 +452,8 @@ summaryCountsTable <- function (samplesheet)
     num.reciprocal         <- numeric(number_of_samples)
     num.nonReciprocal      <- numeric(number_of_samples)
 
-    chromosomes            <- chromosomeLengths (BSgenome.Btaurus.UCSC.bosTau8, c(1:29, "X"))
+    ## This will be set when the first sample is loaded.
+    chromosomes <- NULL
 
     ## Look up scores in the data files
     for (sample_index in 1:number_of_samples)
@@ -465,6 +471,16 @@ summaryCountsTable <- function (samplesheet)
 
         if (! identical(file_name, character(0))) {
             sample <- get(load(file_name))
+
+            chromosome_ranges <- sample[["segments"]]
+
+            ## The first sample to load is used to determine the chromosomes
+            ## and their lengths.
+            if (is.null(chromosomes)) {
+                chromosomes               <- as.data.frame(seqinfo(chromosome_ranges))
+                chromosomes[["seqnames"]] <- rownames(chromosomes)
+            }
+
             losses <- chromosome_ranges[(elementMetadata(chromosome_ranges)[,"copy.number"] < 2)]
             gains  <- chromosome_ranges[(elementMetadata(chromosome_ranges)[,"copy.number"] > 2)]
 
@@ -476,7 +492,7 @@ summaryCountsTable <- function (samplesheet)
             num.chromosomal.losses[sample_index] <- 0
             num.chromosomal.gains[sample_index]  <- 0
             for (chromosome in chromosomes[["seqnames"]]) {
-                total_length <- chromosomes[chromosome,"chr_size"]
+                total_length <- chromosomes[chromosome,"seqlengths"]
                 query        <- GRanges(seqnames = chromosome,
                                         ranges   = IRanges(start = 1,
                                                            end   = total_length))
@@ -531,7 +547,7 @@ summaryCountsTable <- function (samplesheet)
 #'
 #' @return The number of reads found in that region.
 #'
-#' @useDynLib scCnvCharacterizationHelper, .registration = TRUE
+#' @useDynLib USCDtools, .registration = TRUE
 #'
 #' @export
 
@@ -551,7 +567,7 @@ readsInRegion <- function (bamFilename, region, minimumMappingQuality = 0)
 #'
 #' @return A list with the number of reads in each region.
 #'
-#' @useDynLib scCnvCharacterizationHelper, .registration = TRUE
+#' @useDynLib USCDtools, .registration = TRUE
 #'
 #' @export
 
@@ -566,7 +582,7 @@ readsInRegions <- function (bamFilename, regions, minimumMappingQuality = 0)
 #'
 #' @return TRUE on sucess, FALSE on failure.
 #'
-#' @useDynLib scCnvCharacterizationHelper, .registration = TRUE
+#' @useDynLib USCDtools, .registration = TRUE
 #'
 #' @export
 
