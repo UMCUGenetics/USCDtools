@@ -1,13 +1,13 @@
 Package: USCDtools
-Title: Utilities for the single-cell DNA sequencing pipeline at UMC Utrecht
+Title: Utilities for the Single-Cell DNA Sequencing Pipeline at UMC Utrecht
 Version: 0.0.1
 Authors@R: person(given = "Roel",
                   family = "Janssen",
                   role = c("aut", "cre"),
                   email = "r.r.e.janssen-10@umcutrecht.nl",
                   comment = c(ORCID = "0000-0003-4324-5350"))
-Description: This package contains procedures that are used in the
-    single-cell DNA sequencing pipeline used at UMC Utrecht.
+Description: Procedures that are used in the single-cell DNA sequencing
+    pipeline used at UMC Utrecht.
 License: GPL (>= 3)
 URL: https://github.com/UMCUGenetics/USCDtools
 Depends:
