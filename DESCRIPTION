@@ -15,14 +15,12 @@ Imports:
 	GenomicRanges (>= 1.40.0),
 	GenomeInfoDb (>= 1.24.2),
 	IRanges (>= 2.22.2),
-	RCurl (>= 1.95),
-	jsonlite (>= 1.7.1),
 	ggplot2 (>= 3.3.2),
   S4Vectors
 Encoding: UTF-8
 LazyLoad: yes
 LinkingTo: Rhtslib (>= 1.17.7)
-SystemRequirements: GNU make, samtools
+SystemRequirements: GNU make
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
 NeedsCompilation: yes
