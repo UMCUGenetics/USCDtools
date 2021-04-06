@@ -491,6 +491,104 @@ plotCorrectionFactorPerBin <- function (cells.list, correction.factors)
     return (plots)
 }
 
+#' Create a summary table with events per cell.
+#'
+#' @param samplesheet  The samplesheet used to run the pipeline.
+#'
+#' @return A data frame containing the summary counts on success,
+#'         or NULL otherwise.
+#' @export
+
+summaryCountsTable <- function (samplesheet)
+{
+    samples                <- samplesheet[["sample_name"]]
+    number_of_samples      <- length(samples)
+
+    ## Pre-allocate numeric arrays
+    name                   <- character(number_of_samples)
+    cell                   <- numeric(number_of_samples)
+    donor                  <- numeric(number_of_samples)
+    num.segments           <- numeric(number_of_samples)
+    num.chromosomal.gains  <- numeric(number_of_samples)
+    num.chromosomal.losses <- numeric(number_of_samples)
+    num.gains              <- numeric(number_of_samples)
+    num.losses             <- numeric(number_of_samples)
+    num.reciprocal         <- numeric(number_of_samples)
+    num.nonReciprocal      <- numeric(number_of_samples)
+
+    chromosomes            <- chromosomeLengths (BSgenome.Btaurus.UCSC.bosTau8, c(1:29, "X"))
+
+    ## Look up scores in the data files
+    for (sample_index in 1:number_of_samples)
+    {
+        sample_name <- samples[sample_index]
+        row         <- samplesheet[which(samplesheet$sample_name == sample_name),]
+
+        file_name   <- Sys.glob(paste0(base_directory,
+                                       "/*/MODELS/method-edivisive/",
+                                       sample_name, "_dedup.bam_*.RData"))
+
+        name[sample_index]  <- sample_name
+        cell[sample_index]  <- row[["cell"]]
+        donor[sample_index] <- row[["embryo"]]
+
+        if (! identical(file_name, character(0))) {
+            sample <- get(load(file_name))
+            losses <- chromosome_ranges[(elementMetadata(chromosome_ranges)[,"copy.number"] < 2)]
+            gains  <- chromosome_ranges[(elementMetadata(chromosome_ranges)[,"copy.number"] > 2)]
+
+            num.segments[sample_index]  <- sample$qualityInfo$num.segments
+            num.losses[sample_index]    <- length(losses)
+            num.gains[sample_index]     <- length(gains)
+
+            ## Determine whether whole-chromosome events occurred.
+            num.chromosomal.losses[sample_index] <- 0
+            num.chromosomal.gains[sample_index]  <- 0
+            for (chromosome in chromosomes[["seqnames"]]) {
+                total_length <- chromosomes[chromosome,"chr_size"]
+                query        <- GRanges(seqnames = chromosome,
+                                        ranges   = IRanges(start = 1,
+                                                           end   = total_length))
+
+                chromosome_losses <- subsetByOverlaps(losses, query)
+                loss_area         <- sum(width(chromosome_losses))
+
+                chromosome_gains  <- subsetByOverlaps(gains, query)
+                gain_area         <- sum(width(chromosome_gains))
+
+                ## Losing or gaining 90% of the total chromosome length is
+                ## considered a whole-chromosome loss or gain.
+                if (loss_area / total_length > 0.9) {
+                    num.chromosomal.losses[sample_index] = num.chromosomal.losses[sample_index] + 1
+                }
+                else if (gain_area / total_length > 0.9) {
+                    num.chromosomal.gains[sample_index] = num.chromosomal.gains[sample_index] + 1
+                }
+            }
+        } else {
+            num.segments[sample_index]           <- NA
+            num.chromosomal.gains[sample_index]  <- NA
+            num.chromosomal.losses[sample_index] <- NA
+            num.gains[sample_index]              <- NA
+            num.losses[sample_index]             <- NA
+        }
+    }
+
+    output <- data.frame (name,
+                          cell,
+                          donor,
+                          num.segments,
+                          num.chromosomal.gains,
+                          num.chromosomal.losses,
+                          num.gains,
+                          num.losses,
+                          num.reciprocal,
+                          num.nonReciprocal)
+
+    return (output)
+}
+
+
 #' Get the number of reads in a region.
 #'
 #' @param bamFilename            The BAM file to look for reads.
