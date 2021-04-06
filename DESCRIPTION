@@ -1,6 +1,6 @@
 Package: USCDtools
 Title: Utilities for the single-cell DNA sequencing pipeline at UMC Utrecht
-Version: 0.0.0.9000
+Version: 0.0.1
 Authors@R: person(given = "Roel",
                   family = "Janssen",
                   role = c("aut", "cre"),
