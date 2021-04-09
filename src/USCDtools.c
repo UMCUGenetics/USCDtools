@@ -169,15 +169,6 @@ create_bam_index (SEXP input_file_sexp)
   return Rf_ScalarLogical ((status < 0) ? FALSE : TRUE);
 }
 
-SEXP
-create_symbolic_link (SEXP target_sexp, SEXP destination_sexp)
-{
-  const char *target      = CHAR(STRING_ELT(target_sexp, 0));
-  const char *destination = CHAR(STRING_ELT(destination_sexp, 0));
-
-  return Rf_ScalarLogical ((symlink (target, destination) < 0) ? FALSE : TRUE);
-}
-
 /* -------------------------------------------------------------------------
  * Register the functions to R.
  * ------------------------------------------------------------------------- */
@@ -186,7 +177,6 @@ R_CallMethodDef callMethods[]  = {
   { "count_reads_for_range",  (DL_FUNC)&count_reads_for_range,  3 },
   { "count_reads_for_ranges", (DL_FUNC)&count_reads_for_ranges, 3 },
   { "create_bam_index",       (DL_FUNC)&create_bam_index,       1 },
-  { "create_symbolic_link",   (DL_FUNC)&create_symbolic_link,   2 },
   { NULL,                     NULL,                             0 }
 };
 
