@@ -152,7 +152,7 @@ createSequenceabilityFactorsFromSamplesheet <- function (outputDirectory,
                                                          samplesheet,
                                                          copyNumberCallingBinSize,
                                                          reference.genome,
-                                                         numCPU)
+                                                         numCPU=16)
 {
     sequenceability.file <- paste0(outputDirectory,
                                    "/sequenceability.factors.",
@@ -233,9 +233,10 @@ runAneufinderForSamplesheet <- function (outputDirectory,
 		} else {
         sequenceability.file <- createSequenceabilityFactorsFromSamplesheet (
             outputDirectory,
-            copyNumberCallingBinSize,
             sf_samplesheet,
-            genome)
+            copyNumberCallingBinSize,
+            genome,
+            numCPU)
     }
 
 		## -----------------------------------------------------------------------
