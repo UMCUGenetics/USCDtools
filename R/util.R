@@ -174,7 +174,7 @@ getMedianCopyNumberStates <- function (cells.list)
 
 coveragePerBin <- function (compositeBam, genome, chromosomeFilter, binSize, minimumMappingQuality = 0)
 {
-    if (! file.exists (compositeBam))
+    if (is.null(compositeBam) || ! file.exists (compositeBam))
     {
         cat (paste0 ("File '", compositeBam, "' does not exist.\n"))
         return (FALSE)
@@ -328,6 +328,10 @@ mergeBinCounts <- function (cells.list)
     numberOfCells <- length(cells.list)
     numberOfBins  <- nrow(cells.list[[1]])
 
+    if (is.null(numberOfBins)) {
+        return(NULL)
+    }
+
     totalPerBin   <- numeric(numberOfBins)
     for (binIndex in 1:numberOfBins)
     {
@@ -348,35 +352,48 @@ mergeBinCounts <- function (cells.list)
 }
 
 
-#' Calculate a correction factor for the sequencing depth of each bin.
+#' Procedure to determine the sequenceability factors
 #'
-#' @param cells.list  A list of data frames returned by 'coveragePerBin'.
+#' @param binpath.uncorrected  The uncorrected binned data from an Aneufinder run.
+#' @param bins                 The output of either 'fixedWidthBins' or 'variableWidthBins'.
 #'
-#' @return A list with the correction factor per bin.
+#' @return A vector containing the sequenceability factors.
 #'
 #' @export
+determineSequenceabilityFactors <- function (binpath.uncorrected, bins) {
+    binned.files  <- list.files(binpath.uncorrected, pattern=".*RData$", full.names=TRUE)
+    numberOfCells <- length(binned.files)
+    numberOfBins  <- length(bins[[1]][[1]])
 
-determineCorrectionFactorPerBin <- function (cells.list)
-{
-    numberOfCells <- length(cells.list)
-    numberOfBins  <- nrow(cells.list[[1]])
+    totals        <- array(NA, dim = c(numberOfCells, numberOfBins))
+    for (cellIndex in 1:numberOfCells)
+    {
+        file <- binned.files[cellIndex]
+        cell <- get(load(file))
+        for (binIndex in 1:numberOfBins)
+        {
+            totals[cellIndex,binIndex] <- cell[[1]]$counts[binIndex]
+        }
+        rm(cell)
+    }
 
-    medianPerBin  <- numeric(numberOfBins)
+    medianPerBin <- numeric(numberOfBins)
     for (binIndex in 1:numberOfBins)
     {
-        binCounts <- numeric(numberOfCells)
-        for (cellIndex in 1:numberOfCells)
-        {
-            binCounts[cellIndex] <- cells.list[[cellIndex]]$read.count[binIndex]
-        }
-        medianPerBin[binIndex] <- median(binCounts)
+        medianPerBin[binIndex] <- median(totals[,binIndex])
     }
 
     averageBinCount <- mean(medianPerBin)
-    output <- averageBinCount / medianPerBin
+    sequenceability.factors <- averageBinCount / medianPerBin
 
-    return (output)
+    ## When there are no reads in a bin, we'd get an infinite factor.
+    ## But we want to ignore these cases, and therefore we set a factor
+    ## of 1.0 for these bins.
+    sequenceability.factors[which(!is.finite(sequenceability.factors))] <- 1.0
+
+    return (sequenceability.factors)
 }
+
 
 #' Plot the correction factors calculated by ‘determineCorrectionFactorPerBin’.
 #'
