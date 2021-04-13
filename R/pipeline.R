@@ -176,6 +176,7 @@ createSequenceabilityFactorsFromSamplesheet <- function (outputDirectory,
                                NULL,
                                NULL,
                                c("GC"),
+                               plotting=FALSE,
                                reference.genome)
 
         sequenceability.folder  <- paste0 (sequenceability.folder, "/Aneufinder/binned-GC")
