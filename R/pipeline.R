@@ -527,7 +527,7 @@ excludedCells <- function (base_directory,
             cat.pos         = c(0, 0, 0),
             cat.fontfamily  = "sans");
 
-        ggsave(paste0(donor, "_filter_overlap.svg"), temp, width=5, height=5,units="cm", dpi=300)
+        ggsave("filter_overlap.svg", temp, width=5, height=5,units="cm", dpi=300)
     }
 
     return(excluded_cells)
