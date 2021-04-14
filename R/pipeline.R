@@ -265,10 +265,74 @@ runAneufinderForSamplesheet <- function (outputDirectory,
 #'
 #' @param base_directory  The directory in which AneuFinder output was written.
 #' @param samplesheet     The samplesheet used to run the pipeline.
+#'
+#' @return A data frame containing various quality metrics for all cells
+#'         associated with the specified donor.
+#'
+#' @export
+
+gatherQualityInfoForSamplesheet <- function (base_directory, samplesheet)
+{
+    donor_samples         <- samplesheet[["sample_name"]]
+    number_of_samples     <- length(donor_samples)
+
+    ## Pre-allocate numeric arrays
+    name          <- character(number_of_samples)
+    num.segments  <- numeric(number_of_samples)
+    bhattacharyya <- numeric(number_of_samples)
+    spikiness     <- numeric(number_of_samples)
+    entropy       <- numeric(number_of_samples)
+    read.count    <- numeric(number_of_samples)
+
+    ## Look up scores in the data files
+    for (sample_index in 1:number_of_samples)
+    {
+        sample_name  <- donor_samples[sample_index]
+        file_name    <- Sys.glob(paste0(base_directory, "/*/MODELS",
+                                        "/method-edivisive/", sample_name,
+                                        "_dedup.bam_*.RData"))
+
+        if (identical(file_name, character(0))) {
+            name[sample_index]          <- sample_name
+            num.segments[sample_index]  <- NA
+            bhattacharyya[sample_index] <- NA
+            entropy[sample_index]       <- NA
+            spikiness[sample_index]     <- NA
+            read.count[sample_index]    <- NA
+        }
+        else {
+            sample       <- get(load(file_name))
+
+            name[sample_index]          <- sample_name
+            num.segments[sample_index]  <- sample$qualityInfo$num.segments
+            bhattacharyya[sample_index] <- sample$qualityInfo$bhattacharyya
+            entropy[sample_index]       <- sample$qualityInfo$entropy
+            spikiness[sample_index]     <- sample$qualityInfo$spikiness
+            read.count[sample_index]    <- sample$qualityInfo$total.read.count
+        }
+    }
+
+    output <- data.frame (name, num.segments, bhattacharyya, entropy, spikiness, read.count)
+
+    ## Exclude bin scores that have no read support.
+    output$entropy[which(!is.finite(output$entropy))]             <- NA
+    output$num.segments[which(!is.finite(output$num.segments))]   <- NA
+    output$spikiness[which(!is.finite(output$spikiness))]         <- NA
+    output$bhattacharyya[which(!is.finite(output$bhattacharyya))] <- NA
+
+    return (output)
+}
+
+#' Gather quality metrics from AneuFinder output.
+#'
+#' @param base_directory  The directory in which AneuFinder output was written.
+#' @param samplesheet     The samplesheet used to run the pipeline.
 #' @param donor           The name of the donor to extract cells for.
 #'
 #' @return A data frame containing various quality metrics for all cells
 #'         associated with the specified donor.
+#'
+#' @export
 
 gatherQualityInfoForDonor <- function (base_directory, samplesheet, donor)
 {
@@ -349,6 +413,77 @@ excludedCellsForRun <- function (base_directory,
     run_samplesheet             <- samplesheet[which (samplesheet$donor == donor),]
     scores.df                   <- gatherQualityInfoForDonor (base_directory, samplesheet, donor)
 
+    ncells                      <- nrow(scores.df)
+    all_cells                   <- scores.df[["name"]]
+    nreads_after_filter         <- scores.df[which(scores.df$read.count > 200000),"name"]
+
+    if (is.null(bhattacharyya_threshold)) {
+        bhattacharyya_threshold <- tail(head(sort(scores.df[["bhattacharyya"]]), round(ncells / 10)), 1)
+    }
+    if (is.null(spikiness_threshold)) {
+        spikiness_threshold     <- head(tail(sort(scores.df[["spikiness"]]), round(ncells / 10)), 1)
+    }
+
+    bhattacharyya_after_filter  <- scores.df[which(scores.df$bhattacharyya > bhattacharyya_threshold),"name"]
+    spikiness_after_filter      <- scores.df[which(scores.df$spikiness < spikiness_threshold),"name"]
+
+    included_cells              <- Reduce(intersect, list(nreads_after_filter,
+                                                          bhattacharyya_after_filter,
+                                                          spikiness_after_filter))
+    excluded_cells              <- setdiff(all_cells, included_cells)
+
+    if (plotOverlap) {
+        temp   <- venn.diagram(
+            x               = list (nreads_after_filter,
+                                    bhattacharyya_after_filter,
+                                    spikiness_after_filter),
+            category.names  = c ("Reads", "Bhattacharyya", "Spikiness"),
+            filename        = NULL,
+            width           = 5,
+            height          = 5,
+            lwd             = 3,
+            lty             = 'solid',
+            col             = c("#56B4E9", "#E69F00", "#009E73"),
+            fill            = c(alpha("#56B4E9",0.4),
+                                alpha('#E69F00',0.4),
+                                alpha('#009E73',0.4)),
+            cex             = .9,
+            fontface        = "bold",
+            fontfamily      = "sans",
+            cat.cex         = .9,
+            cat.default.pos = "text",
+            cat.pos         = c(0, 0, 0),
+            cat.fontfamily  = "sans");
+
+        ggsave(paste0(donor, "_filter_overlap.svg"), temp, width=5, height=5,units="cm", dpi=300)
+    }
+
+    return(excluded_cells)
+}
+
+#' Exclude cells from the analysis after performing quality control.
+#'
+#' @param base_directory           The directory in which AneuFinder output was written.
+#' @param samplesheet              The samplesheet used to run the pipeline.
+#' @param bhattacharyya_threshold  Threshold for the Bhattacharyya.
+#' @param spikiness_threshold      Threshold for the spikiness.
+#' @param plotOverlap              Whether to make a Venn diagram to show the overlap
+#'                                 between filter criteria.
+#'
+#' @importFrom ggplot2     ggsave
+#' @importFrom VennDiagram venn.diagram
+#' @importFrom utils       head tail
+#' @importFrom scales      alpha
+#'
+#' @export
+
+excludedCells <- function (base_directory,
+                           samplesheet,
+                           bhattacharyya_threshold=NULL,
+                           spikiness_threshold=NULL,
+                           plotOverlap=FALSE)
+{
+    scores.df                   <- gatherQualityInfoForSamplesheet (base_directory, samplesheet)
     ncells                      <- nrow(scores.df)
     all_cells                   <- scores.df[["name"]]
     nreads_after_filter         <- scores.df[which(scores.df$read.count > 200000),"name"]
