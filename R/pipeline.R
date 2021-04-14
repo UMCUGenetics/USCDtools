@@ -65,7 +65,7 @@ runAneufinderForDonor <- function (output_directory,
                 method                 = c("edivisive"),
                 min.mapq               = 10,
                 sequenceability.file   = sequenceability.file,
-                stop.after.binning     = !plotting)
+                plotting               = plotting)
 
     unlink (outputTempFolder, recursive = TRUE)
 }
@@ -289,7 +289,9 @@ gatherQualityInfoForSamplesheet <- function (base_directory, samplesheet)
     for (sample_index in 1:number_of_samples)
     {
         sample_name  <- donor_samples[sample_index]
-        file_name    <- Sys.glob(paste0(base_directory, "/*/MODELS",
+        donor_name   <- samplesheet[which(samplesheet[["sample_name"]] == sample_name),][["donor"]]
+        file_name    <- Sys.glob(paste0(base_directory, "/",
+                                        donor_name ,"/MODELS",
                                         "/method-edivisive/", sample_name,
                                         "_dedup.bam_*.RData"))
 
