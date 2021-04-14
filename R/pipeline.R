@@ -209,7 +209,8 @@ runAneufinderForSamplesheet <- function (outputDirectory,
                                          allosomes,
                                          autosomes,
                                          applySequenceabilityFactors = FALSE,
-                                         numCPU = 16)
+                                         numCPU = 16,
+                                         plotting = FALSE)
 {
 		chromosomeFilter  <- c(autosomes, allosomes)
     sf_samplesheet    <- samplesheet[which (samplesheet$include_in_sf == 1),]
@@ -256,7 +257,7 @@ runAneufinderForSamplesheet <- function (outputDirectory,
                                blacklist.file,
                                sequenceability.file,
                                correction.method=c("GCSC"),
-                               plotting=FALSE,
+                               plotting=plotting,
                                reference.genome=genome)
     }
 }
