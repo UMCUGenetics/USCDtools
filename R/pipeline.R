@@ -246,8 +246,7 @@ runAneufinderForSamplesheet <- function (outputDirectory,
     ## -----------------------------------------------------------------------
 
     donors <- unique(samplesheet$donor)
-    for (donor in donors)
-    {
+    mclapply (donors, function (donor) {
         donor_samplesheet <- samplesheet[which (samplesheet$donor == donor),]
         runAneufinderForDonor (outputDirectory,
                                donor,
@@ -259,7 +258,7 @@ runAneufinderForSamplesheet <- function (outputDirectory,
                                correction.method=c("GCSC"),
                                plotting=plotting,
                                reference.genome=genome)
-    }
+    }, mc.cores=numCPU)
 }
 
 #' Gather quality metrics from AneuFinder output.
