@@ -498,8 +498,9 @@ summaryCountsTable <- function (base_directory, samplesheet)
                 chromosomes[["seqnames"]] <- rownames(chromosomes)
             }
 
-            losses <- chromosome_ranges[(elementMetadata(chromosome_ranges)[,"copy.number"] < 2)]
-            gains  <- chromosome_ranges[(elementMetadata(chromosome_ranges)[,"copy.number"] > 2)]
+            cn_state = 2 ## round(median(segments$copy.number), 1)
+            losses <- chromosome_ranges[(elementMetadata(chromosome_ranges)[,"copy.number"] < cn_state)]
+            gains  <- chromosome_ranges[(elementMetadata(chromosome_ranges)[,"copy.number"] > cn_state)]
 
             num.segments[sample_index]  <- sample$qualityInfo$num.segments
             num.losses[sample_index]    <- length(losses)
