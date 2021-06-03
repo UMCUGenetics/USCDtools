@@ -325,6 +325,117 @@ gatherQualityInfoForSamplesheet <- function (base_directory, samplesheet)
     return (output)
 }
 
+#' Find recurring copy-number events.
+#'
+#' @param base_directory  The directory in which AneuFinder output was written.
+#' @param samplesheet     The samplesheet used to run the pipeline.
+#' @param maximum.size    The maximum event size to look for.
+#' @param numCPU          The number of tasks to run in parallel.
+#'
+#' @importFrom BiocGenerics width
+#'
+#' @return A GRanges object containing the regions of recurrent events.
+#'
+#' @export
+
+findRecurringEvents <- function (base_directory, samplesheet, maximum.size=10000, numCPU=16)
+{
+    ## ------------------------------------------------------------------------
+    ## Build matrices with copy number states.
+    ## ------------------------------------------------------------------------
+
+    donor_samples     <- samplesheet[["sample_name"]]
+    number_of_samples <- length(donor_samples)
+
+    ## Determine the number of bins.
+    sample_name       <- donor_samples[1]
+    donor_name        <- samplesheet[which(samplesheet[["sample_name"]] == sample_name),][["donor"]]
+    file_name         <- Sys.glob(paste0(base_directory, "/",
+                                         donor_name ,"/MODELS",
+                                         "/method-edivisive/", sample_name,
+                                         "_dedup.bam_*.RData"))
+    sample            <- get(load(file_name))
+    bins              <- granges(sample[["bincounts"]][[1]])
+    bin_size          <- width(bins[1])
+    number_of_bins    <- length(bins)
+    rm(sample)
+
+    ## Not ideal, but reduce the memory footprint before forking.
+    gc(full=TRUE)
+
+    ## Create matrix with copy-number states and relative state changes.
+    results <- mclapply (1:number_of_samples, function(sample_index)
+    {
+        sample_name   <- donor_samples[sample_index]
+        donor_name    <- samplesheet[which(samplesheet[["sample_name"]] == sample_name),][["donor"]]
+        file_name     <- Sys.glob(paste0(base_directory, "/",
+                                         donor_name ,"/MODELS",
+                                         "/method-edivisive/", sample_name,
+                                         "_dedup.bam_*.RData"))
+        sample        <- get(load(file_name))
+
+        ## Determine the sample's base copy number state.
+        base_cn_state <- median(sample$segments$copy.number)
+
+        row <- sapply (seq_along(bins), function (range_index) {
+            range       <- subsetByOverlaps(sample[["segments"]], bins[range_index])
+            events_df   <- range$copy.number
+            relative_df <- base_cn_state / range$copy.number
+
+            return (c(events_df, relative_df))
+        })
+
+        rm(sample)
+        return(list(base_cn_state, row))
+    }, mc.cores=numCPU)
+
+    events.df         <- matrix(ncol=number_of_bins, nrow=number_of_samples)
+    relative.df       <- matrix(ncol=number_of_bins, nrow=number_of_samples)
+    base.cn.state     <- numeric(number_of_samples)
+
+    ## Assign the values gathered using mclapply in the pre-allocated matrix
+    for (index in 1:number_of_samples) {
+        base.cn.state[index] <- results[[index]][[1]]
+        relative.df[index,]  <- results[[index]][[2]][2,]
+        events.df[index,]    <- results[[index]][[2]][1,]
+    }
+
+    ## ------------------------------------------------------------------------
+    ## Determine recurring events.
+    ## ------------------------------------------------------------------------
+
+    bins_needed_for_exclusion <- ceiling (10000000 / bin_size, 1)
+
+    is.recurrent      <- numeric(number_of_bins)
+    for (column_index in 1:ncol(events.df)) {
+        bin             <- relative.df[,column_index]
+        occurrences     <- as.data.frame(table(bin))
+
+        ## XXX: The criteria should be: Events that occur in more than 3 donors.
+        ## If more than 90% of the samples deviate from their base CN...
+        if ((occurrences$Freq[which(occurrences$bin==1)] / number_of_samples) < 0.1) {
+            is.recurrent[column_index] <- 1
+        } else {
+            is.recurrent[column_index] <- 0
+        }
+    }
+
+    ## Separate the bins per chromosome.
+    bins.df           <- as.data.frame(bins)
+    chromosomes       <- unique(bins.df$seqnames)
+    chromosome.bins   <- sapply (chromosomes,
+                                 function (chromosome) {
+                                     ## We can use SUM here because TRUE is 1,
+                                     ## and FALSE is 0.
+                                     sum(bins.df$seqnames == chromosome)
+                                 })
+
+    ## Check adjacency of the bins in the same chromosome.
+    chromosome.bins[[chromosomes[1]]]
+
+    return (events.df)
+}
+
 #' Gather quality metrics from AneuFinder output.
 #'
 #' @param base_directory  The directory in which AneuFinder output was written.
