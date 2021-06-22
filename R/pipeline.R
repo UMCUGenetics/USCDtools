@@ -144,7 +144,7 @@ createBlacklistFromSamplesheet <- function (outputDirectory,
 #'
 #' @importFrom Rsamtools BamFile
 #' @importFrom GenomeInfoDb seqlengths
-#' @importFrom AneuFinder fixedWidthBins determineSequenceabilityFactors
+#' @importFrom AneuFinder fixedWidthBins
 #'
 #' @export
 
