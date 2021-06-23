@@ -209,8 +209,8 @@ runAneufinderForSamplesheet <- function (outputDirectory,
                                          blacklistBinSize,
                                          copyNumberCallingBinSize,
                                          genome,
-                                         allosomes,
                                          autosomes,
+                                         allosomes,
                                          applySequenceabilityFactors = FALSE,
                                          numCPU = 16,
                                          plotting = FALSE)
@@ -395,16 +395,22 @@ copyNumberMatrixForSamplesheet <- function (base_directory, samplesheet, numCPU=
         return(list(base_cn_state, row))
     }, mc.cores=numCPU)
 
-    events.df         <- matrix(ncol=number_of_bins, nrow=number_of_samples)
+    ##events.df         <- matrix(ncol=number_of_bins, nrow=number_of_samples)
     relative.df       <- matrix(ncol=number_of_bins, nrow=number_of_samples)
-    base.cn.state     <- numeric(number_of_samples)
+    ##base.cn.state     <- numeric(number_of_samples)
 
     ## Assign the values gathered using mclapply in the pre-allocated matrix
     for (index in 1:number_of_samples) {
-        base.cn.state[index] <- results[[index]][[1]]
+        ##base.cn.state[index] <- results[[index]][[1]]
         relative.df[index,]  <- results[[index]][[2]][2,]
-        events.df[index,]    <- results[[index]][[2]][1,]
+        ##events.df[index,]    <- results[[index]][[2]][1,]
     }
+
+    rownames(relative.df) <- samplesheet[,"sample_name"]
+    colnames(relative.df) <- paste0(seqnames(bins), ":", ranges(bins))
+
+    return(relative.df)
+}
 
     ## ------------------------------------------------------------------------
     ## Determine recurring events.
