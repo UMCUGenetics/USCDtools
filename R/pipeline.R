@@ -180,7 +180,9 @@ createSequenceabilityFactorsFromSamplesheet <- function (outputDirectory,
                                NULL,
                                c("GC"),
                                plotting=FALSE,
-                               reference.genome)
+                               reference.genome,
+                               autosomes,
+                               allosomes)
 
         sequenceability.folder  <- paste0 (sequenceability.folder, "/Aneufinder/binned-GC")
         sequenceability.factors <- determineSequenceabilityFactors (sequenceability.folder, bins)
@@ -262,7 +264,9 @@ runAneufinderForSamplesheet <- function (outputDirectory,
                                sequenceability.file,
                                correction.method=c("GCSC"),
                                plotting=plotting,
-                               reference.genome=genome)
+                               reference.genome=genome,
+                               autosomes,
+                               allosomes)
     }, mc.cores=numCPU)
 }
 
