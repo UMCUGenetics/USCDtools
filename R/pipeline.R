@@ -412,6 +412,63 @@ copyNumberMatrixForSamplesheet <- function (base_directory, samplesheet, numCPU=
     return(relative.df)
 }
 
+
+#' Summarize events per donor.
+#'
+#' @param base_directory  The directory in which AneuFinder output was written.
+#' @param samplesheet     The samplesheet used to run the pipeline.
+#' @param donor           The name of the donor to process.
+#' @param numCPU          The number of tasks to run in parallel. (default=16)
+#'
+#' @importFrom BiocGenerics width
+#'
+#' @return A GRanges object containing the regions of recurrent events.
+#'
+#' @export
+
+eventsForDonor <- function (base_directory, samplesheet, donor, numCPU=16)
+{
+    donor_samplesheet <- samplesheet[which (samplesheet[["donor"]] == donor),]
+    cn.matrix         <- copyNumberMatrixForSamplesheet (base_directory, donor_samplesheet, numCPU)
+    number_of_bins    <- ncol(cn.matrix)
+    bin_state         <- integer (length=number_of_bins)
+    bin_logical       <- logical (length=number_of_bins)
+    threshold         <- round(nrow(donor_samplesheet) / 30)
+
+    ## Decide for each bin whether it's a "population-wide" event or not.
+    for (column_index in 1:number_of_bins)
+        for (row_index in 1:nrow(cn.matrix))
+            bin_state[column_index] = bin_state[column_index] +
+                (cn.matrix[row_index,column_index] != 1.0)
+
+    ## Make the scoring logical.
+    for (column_index in 1:number_of_bins)
+        for (row_index in 1:nrow(cn.matrix))
+            bin_logical[column_index] = (bin_state[column_index] > 6)
+
+    return (bin_state)
+}
+
+
+#' Find recurring copy-number events.
+#'
+#' @param base_directory  The directory in which AneuFinder output was written.
+#' @param samplesheet     The samplesheet used to run the pipeline.
+#' @param maximum.size    The maximum event size to look for.
+#' @param numCPU          The number of tasks to run in parallel.
+#'
+#' @importFrom BiocGenerics width
+#'
+#' @return A GRanges object containing the regions of recurrent events.
+#'
+#' @export
+
+findRecurringEvents <- function (base_directory, samplesheet, maximum.size=10000, numCPU=16)
+{
+    relative.df <- copyNumberMatrixForSamplesheet (base_directory,
+                                                   samplesheet,
+                                                   numCPU=16)
+
     ## ------------------------------------------------------------------------
     ## Determine recurring events.
     ## ------------------------------------------------------------------------
@@ -445,7 +502,7 @@ copyNumberMatrixForSamplesheet <- function (base_directory, samplesheet, numCPU=
     ## Check adjacency of the bins in the same chromosome.
     chromosome.bins[[chromosomes[1]]]
 
-    return (events.df)
+    return (relative.df)
 }
 
 #' Gather quality metrics from AneuFinder output.
