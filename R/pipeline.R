@@ -31,7 +31,9 @@ runAneufinderForDonor <- function (output_directory,
                                    sequenceability.file=NULL,
                                    correction.method=c("GC"),
                                    plotting=FALSE,
-                                   reference.genome)
+                                   reference.genome,
+                                   autosomes,
+                                   allosomes)
 {
     outputTempFolder       <- paste0 (output_directory, "/.tmp_", donor)
     aneufinderOutputFolder <- paste0 (output_directory, "/", donor)
@@ -50,12 +52,11 @@ runAneufinderForDonor <- function (output_directory,
 
     Aneufinder (inputfolder            = outputTempFolder,
                 outputfolder           = aneufinderOutputFolder,
-                assembly               = 'bosTau8',
                 numCPU                 = numCPU,
                 binsizes               = copyNumberCallingBinSize,
                 stepsizes              = copyNumberCallingBinSize,
                 correction.method      = correction.method,
-                chromosomes            = c(1:29, "X"),
+                chromosomes            = c(allosomes, autosomes),
                 remove.duplicate.reads = TRUE,
                 reads.store            = FALSE,
                 blacklist              = blacklist.file,
@@ -152,6 +153,8 @@ createSequenceabilityFactorsFromSamplesheet <- function (outputDirectory,
                                                          samplesheet,
                                                          copyNumberCallingBinSize,
                                                          reference.genome,
+                                                         allosomes,
+                                                         autosomes,
                                                          numCPU=16)
 {
     sequenceability.file <- paste0(outputDirectory,
@@ -163,7 +166,7 @@ createSequenceabilityFactorsFromSamplesheet <- function (outputDirectory,
     {
         bamfile       <- samplesheet$filename[1]
         chrom.lengths <- GenomeInfoDb::seqlengths(Rsamtools::BamFile(bamfile))
-        bins          <- fixedWidthBins (chrom.lengths = chrom.lengths, chromosomes=c(1:29, "X"),
+        bins          <- fixedWidthBins (chrom.lengths = chrom.lengths, chromosomes=c(allosomes, autosomes),
                                          binsizes      = copyNumberCallingBinSize,
                                          stepsizes     = copyNumberCallingBinSize)
 
@@ -238,6 +241,8 @@ runAneufinderForSamplesheet <- function (outputDirectory,
             sf_samplesheet,
             copyNumberCallingBinSize,
             genome,
+            allosomes,
+            autosomes,
             numCPU)
     }
 
@@ -325,7 +330,8 @@ gatherQualityInfoForSamplesheet <- function (base_directory, samplesheet)
     return (output)
 }
 
-#' Find recurring copy-number events.
+
+#' Create a single matrix with all copy number events in a samplesheet
 #'
 #' @param base_directory  The directory in which AneuFinder output was written.
 #' @param samplesheet     The samplesheet used to run the pipeline.
@@ -334,11 +340,11 @@ gatherQualityInfoForSamplesheet <- function (base_directory, samplesheet)
 #'
 #' @importFrom BiocGenerics width
 #'
-#' @return A GRanges object containing the regions of recurrent events.
+#' @return A matrix of the size number-of-bins * number-of-cells.
 #'
-#' @export
+#'
 
-findRecurringEvents <- function (base_directory, samplesheet, maximum.size=10000, numCPU=16)
+copyNumberMatrixForSamplesheet <- function (base_directory, samplesheet, numCPU=16)
 {
     ## ------------------------------------------------------------------------
     ## Build matrices with copy number states.
