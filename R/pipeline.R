@@ -12,6 +12,7 @@
 #' @param samplesheet              A data frame of the samplesheet.
 #' @param numCPU                   The number of CPUs to use.
 #' @param copyNumberCallingBinSize The bin size to use for copy number calling.
+#' @param stepsize                 The step size to use for copy number calling.
 #' @param blacklist.file           The blacklist file to use.
 #' @param sequenceability.file     The sequenceability factors file to use.
 #' @param correction.method        The correction method to apply.
@@ -27,6 +28,7 @@ runAneufinderForDonor <- function (output_directory,
                                    samplesheet,
                                    numCPU,
                                    copyNumberCallingBinSize,
+                                   stepsize,
                                    blacklist.file=NULL,
                                    sequenceability.file=NULL,
                                    correction.method=c("GC"),
@@ -54,7 +56,7 @@ runAneufinderForDonor <- function (output_directory,
                 outputfolder           = aneufinderOutputFolder,
                 numCPU                 = numCPU,
                 binsizes               = copyNumberCallingBinSize,
-                stepsizes              = copyNumberCallingBinSize,
+                stepsizes              = stepsize,
                 correction.method      = correction.method,
                 chromosomes            = c(allosomes, autosomes),
                 remove.duplicate.reads = TRUE,
@@ -152,6 +154,7 @@ createBlacklistFromSamplesheet <- function (outputDirectory,
 createSequenceabilityFactorsFromSamplesheet <- function (outputDirectory,
                                                          samplesheet,
                                                          copyNumberCallingBinSize,
+                                                         stepsize,
                                                          reference.genome,
                                                          allosomes,
                                                          autosomes,
@@ -176,6 +179,7 @@ createSequenceabilityFactorsFromSamplesheet <- function (outputDirectory,
                                samplesheet,
                                numCPU,
                                copyNumberCallingBinSize,
+                               stepsize,
                                NULL,
                                NULL,
                                c("GC"),
@@ -198,6 +202,7 @@ createSequenceabilityFactorsFromSamplesheet <- function (outputDirectory,
 #' @param samplesheet                  A data frame of the samplesheet.
 #' @param blacklistBinSize             The bin size to use for backlisting regions.
 #' @param copyNumberCallingBinSize     The bin size to use for copy number calling.
+#' @param stepsize                     The step size to use for copy number calling.
 #' @param genome                       The BSgenome to use as reference.
 #' @param allosomes                    The allosomal chromosomes to include.
 #' @param autosomes                    The autosomal chromosomes to include.
@@ -210,6 +215,7 @@ runAneufinderForSamplesheet <- function (outputDirectory,
                                          samplesheet,
                                          blacklistBinSize,
                                          copyNumberCallingBinSize,
+                                         stepsize,
                                          genome,
                                          autosomes,
                                          allosomes,
@@ -242,6 +248,7 @@ runAneufinderForSamplesheet <- function (outputDirectory,
             outputDirectory,
             sf_samplesheet,
             copyNumberCallingBinSize,
+            stepsize,
             genome,
             allosomes,
             autosomes,
@@ -260,6 +267,7 @@ runAneufinderForSamplesheet <- function (outputDirectory,
                                donor_samplesheet,
                                numCPU,
                                copyNumberCallingBinSize,
+                               stepsize,
                                blacklist.file,
                                sequenceability.file,
                                correction.method=c("GCSC"),
