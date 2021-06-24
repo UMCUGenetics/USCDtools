@@ -262,6 +262,8 @@ runAneufinderForSamplesheet <- function (outputDirectory,
     donors <- unique(samplesheet$donor)
     mclapply (donors, function (donor) {
         donor_samplesheet <- samplesheet[which (samplesheet$donor == donor),]
+        correction_method <- "GCSC"
+        if (!applySequenceabilityFactors) { correction_method <- "GC" }
         runAneufinderForDonor (outputDirectory,
                                donor,
                                donor_samplesheet,
@@ -270,7 +272,7 @@ runAneufinderForSamplesheet <- function (outputDirectory,
                                stepsize,
                                blacklist.file,
                                sequenceability.file,
-                               correction.method=c("GCSC"),
+                               correction.method=c(correction_method),
                                plotting=plotting,
                                reference.genome=genome,
                                autosomes,
