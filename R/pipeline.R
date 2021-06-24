@@ -677,14 +677,14 @@ excludedCells <- function (base_directory,
                            bhattacharyya_threshold=NULL,
                            spikiness_threshold=NULL,
                            plotOverlap=FALSE,
-                           minimum_numer_of_reads=200000,
+                           minimum_number_of_reads=200000,
                            threshold_bhattacharyya=10,
                            threshold_spikiness=10)
 {
     scores.df                   <- gatherQualityInfoForSamplesheet (base_directory, samplesheet)
     ncells                      <- nrow(scores.df)
     all_cells                   <- scores.df[["name"]]
-    nreads_after_filter         <- scores.df[which(scores.df$read.count > minimum_numer_of_reads),"name"]
+    nreads_after_filter         <- scores.df[which(scores.df$read.count > minimum_number_of_reads),"name"]
 
     if (is.null(bhattacharyya_threshold)) {
         bhattacharyya_threshold <- tail(head(sort(scores.df[["bhattacharyya"]]), round(ncells / threshold_bhattacharyya)), 1)
