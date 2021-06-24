@@ -581,6 +581,9 @@ gatherQualityInfoForDonor <- function (base_directory, samplesheet, donor)
 #' @param spikiness_threshold      Threshold for the spikiness.
 #' @param plotOverlap              Whether to make a Venn diagram to show the overlap
 #'                                 between filter criteria.
+#' @param minimum_number_of_reads  Exclude cells with less reads than this parameter.
+#' @param threshold_bhattacharyya  Exclude the worst scoring N percentage of cells.
+#' @param threshold_spikiness      Exclude the worst scoring N percentage of cells.
 #'
 #' @importFrom ggplot2     ggsave
 #' @importFrom VennDiagram venn.diagram
@@ -594,20 +597,23 @@ excludedCellsForRun <- function (base_directory,
                                  donor,
                                  bhattacharyya_threshold=NULL,
                                  spikiness_threshold=NULL,
-                                 plotOverlap=FALSE)
+                                 plotOverlap=FALSE,
+                                 minimum_number_of_reads=200000,
+                                 threshold_bhattacharyya=10,
+                                 threshold_spikiness=10)
 {
     run_samplesheet             <- samplesheet[which (samplesheet$donor == donor),]
     scores.df                   <- gatherQualityInfoForDonor (base_directory, samplesheet, donor)
 
     ncells                      <- nrow(scores.df)
     all_cells                   <- scores.df[["name"]]
-    nreads_after_filter         <- scores.df[which(scores.df$read.count > 200000),"name"]
+    nreads_after_filter         <- scores.df[which(scores.df$read.count > minimum_numer_of_reads),"name"]
 
     if (is.null(bhattacharyya_threshold)) {
-        bhattacharyya_threshold <- tail(head(sort(scores.df[["bhattacharyya"]]), round(ncells / 10)), 1)
+        bhattacharyya_threshold <- tail(head(sort(scores.df[["bhattacharyya"]]), round(ncells / threshold_bhattacharyya)), 1)
     }
     if (is.null(spikiness_threshold)) {
-        spikiness_threshold     <- head(tail(sort(scores.df[["spikiness"]]), round(ncells / 10)), 1)
+        spikiness_threshold     <- head(tail(sort(scores.df[["spikiness"]]), round(ncells / threshold_spikiness)), 1)
     }
 
     bhattacharyya_after_filter  <- scores.df[which(scores.df$bhattacharyya > bhattacharyya_threshold),"name"]
@@ -655,6 +661,9 @@ excludedCellsForRun <- function (base_directory,
 #' @param spikiness_threshold      Threshold for the spikiness.
 #' @param plotOverlap              Whether to make a Venn diagram to show the overlap
 #'                                 between filter criteria.
+#' @param minimum_number_of_reads  Exclude cells with less reads than this parameter.
+#' @param threshold_bhattacharyya  Exclude the worst scoring N percentage of cells.
+#' @param threshold_spikiness      Exclude the worst scoring N percentage of cells.
 #'
 #' @importFrom ggplot2     ggsave
 #' @importFrom VennDiagram venn.diagram
@@ -667,18 +676,21 @@ excludedCells <- function (base_directory,
                            samplesheet,
                            bhattacharyya_threshold=NULL,
                            spikiness_threshold=NULL,
-                           plotOverlap=FALSE)
+                           plotOverlap=FALSE,
+                           minimum_numer_of_reads=200000,
+                           threshold_bhattacharyya=10,
+                           threshold_spikiness=10)
 {
     scores.df                   <- gatherQualityInfoForSamplesheet (base_directory, samplesheet)
     ncells                      <- nrow(scores.df)
     all_cells                   <- scores.df[["name"]]
-    nreads_after_filter         <- scores.df[which(scores.df$read.count > 200000),"name"]
+    nreads_after_filter         <- scores.df[which(scores.df$read.count > minimum_numer_of_reads),"name"]
 
     if (is.null(bhattacharyya_threshold)) {
-        bhattacharyya_threshold <- tail(head(sort(scores.df[["bhattacharyya"]]), round(ncells / 10)), 1)
+        bhattacharyya_threshold <- tail(head(sort(scores.df[["bhattacharyya"]]), round(ncells / threshold_bhattacharyya)), 1)
     }
     if (is.null(spikiness_threshold)) {
-        spikiness_threshold     <- head(tail(sort(scores.df[["spikiness"]]), round(ncells / 10)), 1)
+        spikiness_threshold     <- head(tail(sort(scores.df[["spikiness"]]), round(ncells / threshold_spikiness)), 1)
     }
 
     bhattacharyya_after_filter  <- scores.df[which(scores.df$bhattacharyya > bhattacharyya_threshold),"name"]
